@@ -2,19 +2,148 @@
 
 {% block title %}{{ page_title }}{% endblock %} 
 
+{% block extra_head %}
+<style>
+    /* Ensure the main content area has vertical space flexibility */
+    main.container-fluid {
+        padding-top: 1rem;
+        padding-bottom: 1rem;
+    }
+
+    /* Style for the main visualization container */
+    #graph-container-wrapper {
+        /* Set a minimum height for the graph area, adjusting for navbar and padding */
+        min-height: calc(100vh - 200px); 
+        height: 100%;
+        width: 100%;
+        background-color: #ffffff;
+    }
+
+    /* Custom style for the scrollable jobs panel */
+    .jobs-panel-scroll {
+        /* Set a max height for the panel to enable scrolling */
+        max-height: calc(100vh - 120px); 
+        overflow-y: auto; /* Enable vertical scrolling */
+        padding-right: 0.5rem; /* Add some space for the scrollbar */
+    }
+
+    /* Style the job header to look like an interactive button/rectangle */
+    .job-header {
+        cursor: pointer;
+        padding: 0.75rem 1rem;
+        border-radius: 0.25rem;
+        margin-bottom: 0.5rem;
+        transition: background-color 0.2s ease;
+        border: 1px solid #e9ecef;
+        background-color: #f8f9fa; /* Light background for the header */
+    }
+
+    .job-header:hover {
+        background-color: #e2e6ea;
+    }
+
+    /* Styling for the job rank number */
+    .job-rank {
+        display: inline-block;
+        min-width: 1.5rem;
+        text-align: center;
+        font-weight: bold;
+        color: var(--app-purple);
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-    <h1 class="mb-4 text-app-purple">{{ page_title }}</h1>
+<h1 class="mb-4 text-app-purple fw-light">{{ page_title }}</h1>
+
+<div class="row">
     
-    <div class="card shadow-lg border-0 bg-white" style="min-height: 70vh;">
-        <div class="card-header bg-light border-bottom">
-            <h5 class="mb-0 text-muted">Visualization Area</h5>
-        </div>
-        <div class="card-body d-flex flex-column justify-content-center align-items-center">
-            <p class="lead text-center text-secondary">{{ intro_message }}</p>
-            <div id="graph-container" style="width: 100%; height: 500px; border: 1px dashed #ced4da; display: flex; align-items: center; justify-content: center;">
-                <!-- D3.js or visualization code will be placed here later -->
-                <p class="text-muted text-center m-0 p-5">Placeholder for Skill Adjacency Graph</p>
+    <div class="col-lg-9 mb-4">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-header bg-light border-bottom d-flex justify-content-between align-items-center">
+                <h5 class="mb-0 text-muted">Skill Network Visualization</h5>
+                <div>
+                    <button class="btn btn-sm btn-outline-secondary me-2" data-bs-toggle="tooltip" title="Switch to a circular layout">Circular</button>
+                    <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="tooltip" title="Zoom in/out, pan the graph">Interaction</button>
+                </div>
+            </div>
+            <div class="card-body p-1">
+                <div id="graph-container-wrapper">
+                    <div id="graph-container" class="h-100 w-100 d-flex justify-content-center align-items-center">
+                        <p class="text-muted text-center m-0 p-5 lead">
+                            {{ intro_message|default:"Skill Adjacency Graph Placeholder." }}
+                            <br><small>Your interconnected skills will be displayed here.</small>
+                        </p>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
+    
+    <div class="col-lg-3 mb-4">
+        <div class="card shadow-sm border-0 sticky-top" style="top: 1.5rem;">
+            <div class="card-header border-bottom py-3">
+                <h6 class="mb-0 fw-bold" style="color: var(--app-purple);">Recommended Jobs</h6>
+            </div>
+            
+            <div class="card-body jobs-panel-scroll p-3">
+                
+                <div class="accordion accordion-flush" id="recommendedJobsAccordion">
+                    
+                    {% for job in recommended_jobs %}
+                    
+                    <div class="accordion-item border-0 bg-transparent mb-2">
+                        <h2 class="accordion-header" id="heading{{ forloop.counter }}">
+                            <div class="job-header collapsed" 
+                                data-bs-toggle="collapse" 
+                                data-bs-target="#collapse{{ forloop.counter }}" 
+                                aria-expanded="false" 
+                                aria-controls="collapse{{ forloop.counter }}">
+                                <span class="job-rank">{{ forloop.counter }}.</span>
+                                <strong class="ms-2">{{ job.name }}</strong>
+                            </div>
+                        </h2>
+                        
+                        <div id="collapse{{ forloop.counter }}" class="accordion-collapse collapse" aria-labelledby="heading{{ forloop.counter }}" data-bs-parent="#recommendedJobsAccordion">
+                            <div class="accordion-body p-3 pt-1 border-start border-end border-bottom" style="border-color: #e9ecef !important; background-color: #ffffff;">
+                                <p class="small text-muted mb-2">
+                                    **Skills Needed:** </p>
+                                <div class="d-flex flex-wrap">
+                                    {% for skill in job.skills %}
+                                        <span class="badge rounded-pill text-bg-light border me-1 mb-1">{{ skill }}</span>
+                                    {% endfor %}
+                                </div>
+                                <div class="mt-3 d-grid">
+                                    <a href="#" class="btn btn-sm btn-outline-primary" style="color: var(--app-purple); border-color: var(--app-purple);">
+                                        View Gap Analysis
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                        <p class="text-muted text-center small p-3">No recommended jobs found. Try updating your skills profile.</p>
+                    {% endfor %}
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // --- 1. Initialize Tooltips (for quick controls) ---
+        const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+        [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
+        
+        // Ensure the correct navbar item is active
+        const skillGraphLink = document.querySelector('a[href="/"]');
+        if (skillGraphLink) {
+            skillGraphLink.classList.add('active');
+        }
+    });
+</script>
 {% endblock %}
