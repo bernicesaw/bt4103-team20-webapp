@@ -112,7 +112,8 @@
 
             <!-- Right-hand User/Notification Area -->
             <div class="d-flex align-items-center">
-                <!-- Notification Bell -->
+                <!-- Notification Bell (only visible when user is authenticated) -->
+                {% if request.user.is_authenticated %}
                 <button class="btn btn-outline-warning rounded-circle me-4 position-relative" style="--bs-btn-padding-y: .25rem; --bs-btn-padding-x: .25rem; --bs-btn-font-size: .75rem;">
                     🔔
                     <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
@@ -120,6 +121,7 @@
                         <span class="visually-hidden">unread messages</span>
                     </span>
                 </button>
+                {% endif %}
 
                 <!-- User Profile / Auth Action -->
                 {% if request.user.is_authenticated %}
@@ -132,8 +134,8 @@
                         </div>
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
-                        <li><a class="dropdown-item" href="#">Profile</a></li>
-                        <li><a class="dropdown-item" href="#">Settings</a></li>
+                        <li><a class="dropdown-item" href="{% url 'accounts:profile' %}">Profile</a></li>
+                        <li><a class="dropdown-item" href="{% url 'accounts:settings' %}">Settings</a></li>
                         <li><hr class="dropdown-divider"></li>
                         <li><a class="dropdown-item" href="{% url 'accounts:logout' %}">Sign Out</a></li>
                     </ul>
@@ -148,6 +150,23 @@
     </nav>
 
     <!-- Main Content Area (This is the block that changes per page/app) -->
+    <!-- Django messages (flash) -->
+    <div class="container-fluid p-0 mt-3">
+        <div class="container">
+            {% if messages %}
+                <div class="mt-2">
+                    {% for message in messages %}
+                                {# Map Django message tags to Bootstrap alert classes. Django often uses 'error' tag while Bootstrap expects 'danger'. #}
+                                <div class="alert {% if message.tags == 'error' %}alert-danger{% elif message.tags %}alert-{{ message.tags }}{% else %}alert-info{% endif %} alert-dismissible fade show" role="alert">
+                                    {{ message }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                </div>
+                            {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
     <main class="container-fluid p-4">
         {% block content %}
             <div class="alert alert-light border shadow-sm">

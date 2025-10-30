@@ -52,6 +52,9 @@ class SignupForm(forms.Form):
     # We'll accept working experience as JSON string from the client
     work_experiences = forms.CharField(required=False, help_text='JSON array of experiences')
 
+    # Optional notifications opt-in on signup
+    notifications = forms.BooleanField(required=False, label='Receive notifications')
+
     # Authoritative skills list used for suggestions and server-side validation.
     # Extracted from data cleaning of our dataset
     SKILLS = [

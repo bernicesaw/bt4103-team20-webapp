@@ -53,6 +53,17 @@ function initSignupForm() {
   let skills = [];
   let workExps = [];
 
+  // prefill skills from hidden input if present
+  try {
+    if (window && window.PREFILL_SKILLS) {
+      // PREFILL_SKILLS is expected to be an array
+      try { skills = (window.PREFILL_SKILLS || []).slice(0,5); } catch(e) { /* noop */ }
+    } else if (skillsHidden && skillsHidden.value) {
+      skills = (skillsHidden.value || '').split(',').map(s => s.trim()).filter(Boolean).slice(0,5);
+    }
+  } catch (e) { skills = []; }
+  renderSkills();
+
   function renderSkillSuggestions(filter) {
     if (!skillSuggestionsBox) return;
     skillSuggestionsBox.innerHTML = '';
@@ -97,15 +108,18 @@ function initSignupForm() {
     if (!skills.includes(v)) skills.push(v);
     if (skillsInput) skillsInput.value = '';
     renderSkills();
+    // clear any top-level skills validation now that a chip exists
+    try { clearFieldError(skillsInput); } catch (e) {}
     renderSkillSuggestions('');
   }
 
   if (skillsInput) {
-    skillsInput.addEventListener('input', (e) => renderSkillSuggestions(e.target.value));
+    // show suggestions and clear validation while typing
+    skillsInput.addEventListener('input', (e) => { renderSkillSuggestions(e.target.value); clearFieldError(skillsInput); });
     skillsInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); addSkill(); } });
   }
 
-  function addWorkExp() {
+  function addWorkExp(prefill) {
     if (!workExpsContainer) return;
     if (workExps.length >= 10) {
       alert('Max 10 work experiences allowed');
@@ -115,7 +129,7 @@ function initSignupForm() {
     const container = document.createElement('div');
     container.className = 'work-exp border rounded p-2 mb-2';
 
-    const jobTitle = document.createElement('input');
+  const jobTitle = document.createElement('input');
     jobTitle.placeholder = 'Job Title';
     jobTitle.className = 'form-control mb-2';
     jobTitle.setAttribute('list', 'jobtitles');
@@ -124,8 +138,9 @@ function initSignupForm() {
     // per-experience skills: an input, suggestions, and chips list
     const expSkillsInput = document.createElement('input');
     expSkillsInput.placeholder = 'Type a skill';
-    expSkillsInput.className = 'form-control mb-2';
-    expSkillsInput.required = true;
+  expSkillsInput.className = 'form-control mb-2';
+  // Do not mark the visible per-experience skills input as required —
+  // validation is performed against the selected chips (hidden field).
     const expSkillSuggestions = document.createElement('div');
     expSkillSuggestions.className = 'mb-2';
     const expSkillsList = document.createElement('div');
@@ -157,12 +172,12 @@ function initSignupForm() {
       matches.forEach(m => {
         const b = document.createElement('button');
         b.type = 'button'; b.className = 'btn btn-sm btn-outline-secondary me-1 mb-1'; b.textContent = m;
-        b.onclick = () => { expSkillsArr.push(m); renderExpSkills(); expSkillsInput.focus(); };
+        b.onclick = () => { expSkillsArr.push(m); expSkillsInput.value = ''; renderExpSkills(); expSkillsInput.focus(); };
         expSkillSuggestions.appendChild(b);
       });
     }
 
-    expSkillsInput.addEventListener('input', (e)=> renderExpSkillSuggestions(e.target.value));
+  expSkillsInput.addEventListener('input', (e)=> renderExpSkillSuggestions(e.target.value));
     expSkillsInput.addEventListener('keydown', (e)=> { if (e.key === 'Enter') { e.preventDefault(); const v=expSkillsInput.value.trim(); if(v && expSkillsArr.length<5 && !expSkillsArr.includes(v)){ expSkillsArr.push(v); expSkillsInput.value=''; renderExpSkills(); } } });
 
     const salary = document.createElement('input');
@@ -237,7 +252,24 @@ function initSignupForm() {
 
     workExpsContainer.appendChild(container);
 
-  workExps.push({ jobTitle, salary, currency, expSkillsHidden, expSkillsInput });
+    const entry = { jobTitle, salary, currency, expSkillsHidden, expSkillsInput };
+    workExps.push(entry);
+    // if prefill provided, populate fields
+    if (prefill && typeof prefill === 'object') {
+      if (prefill.job_title) jobTitle.value = prefill.job_title;
+      if (prefill.median_salary !== undefined && prefill.median_salary !== null) salary.value = prefill.median_salary;
+      if (prefill.currency) currency.value = prefill.currency;
+      if (Array.isArray(prefill.skills) && prefill.skills.length) {
+        expSkillsArr = prefill.skills.slice(0,5);
+        renderExpSkills();
+      }
+      // clear validation state for this prefilling
+      clearFieldError(jobTitle);
+      clearFieldError(salary);
+      clearFieldError(currency);
+      clearFieldError(expSkillsInput);
+    }
+
     updateWorkHidden();
   }
 
@@ -340,14 +372,46 @@ function initSignupForm() {
 
   if (addWorkBtn) addWorkBtn.addEventListener('click', addWorkExp);
 
+  // If there are pre-existing work experiences in the hidden input, populate them
+  try {
+    // Prefer server-injected window.PREFILL_WORK_EXPERIENCES when present
+    if (window && window.PREFILL_WORK_EXPERIENCES) {
+      try {
+        const pre = window.PREFILL_WORK_EXPERIENCES;
+        if (Array.isArray(pre) && pre.length) {
+          workExpsContainer.innerHTML = '';
+          workExps = [];
+          pre.forEach(p => addWorkExp(p));
+        }
+      } catch (e) { console.warn('Failed to prefill from window.PREFILL_WORK_EXPERIENCES', e); }
+    } else if (workExpsHidden && workExpsHidden.value) {
+      const pre = JSON.parse(workExpsHidden.value || '[]');
+      if (Array.isArray(pre) && pre.length) {
+        // clear any existing UI
+        workExpsContainer.innerHTML = '';
+        workExps = [];
+        pre.forEach(p => addWorkExp(p));
+      }
+    }
+  } catch (e) { console.warn('Failed to prefill work experiences', e); }
+
   // update hidden fields on form submit
   const form = document.getElementById('signup-form');
   if (form) {
     form.addEventListener('submit', (e) => {
       if (skillsHidden) skillsHidden.value = skills.join(', ');
       updateWorkHidden();
-      // run client-side validation for experiences and prevent submit if invalid
-      const ok = validateWorkExps();
+      // run client-side validation for experiences and top-level skills (chips)
+      const workOk = validateWorkExps();
+      let ok = workOk;
+      if (!skills || skills.length === 0) {
+        // require at least one selected top-level skill (chips)
+        markFieldError(skillsInput, 'Add at least one skill.');
+        ok = false;
+        if (workOk) {
+          try { skillsInput.focus(); } catch (e) {}
+        }
+      }
       if (!ok) {
         e.preventDefault();
       }

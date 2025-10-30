@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Settings{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-8">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <h2 class="card-title">Settings</h2>
+
+        <h4 class="mt-3">Notifications</h4>
+        {% if notif_message %}
+          <div class="alert alert-success">{{ notif_message }}</div>
+        {% endif %}
+        <form method="post" class="mb-4">
+          {% csrf_token %}
+          <div class="form-check mb-2">
+            <input class="form-check-input" type="checkbox" id="id_notifications" name="notifications" {% if profile.notifications_enabled %}checked{% endif %}>
+            <label class="form-check-label" for="id_notifications">Receive notifications</label>
+          </div>
+          <button type="submit" name="save_notifications" class="btn btn-primary">Save</button>
+        </form>
+
+        <h4 class="mt-4">Change Password</h4>
+        {% if pwd_message %}
+          <div class="alert alert-info">{{ pwd_message }}</div>
+        {% endif %}
+        <form method="post" class="stack-labels">
+          {% csrf_token %}
+          {# Render password form fields with labels above and Bootstrap styles to match signup form #}
+          <div class="mb-3">
+            <label for="id_old_password" class="form-label">{{ pwd_form.old_password.label|default:'Old password'|cut:':' }} <span class="text-danger">*</span></label>
+            {{ pwd_form.old_password }}
+            {% if pwd_form.old_password.help_text %}
+              <div class="form-text">{{ pwd_form.old_password.help_text }}</div>
+            {% endif %}
+          </div>
+
+          <div class="mb-3">
+            <label for="id_new_password1" class="form-label">{{ pwd_form.new_password1.label|default:'New password'|cut:':' }} <span class="text-danger">*</span></label>
+            {{ pwd_form.new_password1 }}
+            {% if pwd_form.new_password1.help_text %}
+              <div class="form-text">{{ pwd_form.new_password1.help_text }}</div>
+            {% endif %}
+          </div>
+
+          <div class="mb-3">
+            <label for="id_new_password2" class="form-label">{{ pwd_form.new_password2.label|default:'Confirm new password'|cut:':' }} <span class="text-danger">*</span></label>
+            {{ pwd_form.new_password2 }}
+            <div class="form-text">Enter the same password as before, for verification.</div>
+          </div>
+
+          <button type="submit" name="change_password" class="btn btn-primary">Change password</button>
+        </form>
+
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

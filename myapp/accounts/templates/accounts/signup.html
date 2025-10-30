@@ -74,6 +74,11 @@
           <button type="button" id="add-work-exp" class="btn btn-secondary btn-sm mt-2">Add experience</button>
           <input type="hidden" name="work_experiences" id="work-experiences-hidden">
 
+          <div class="form-check mt-3 mb-2">
+            <input class="form-check-input" type="checkbox" id="id_notifications" name="notifications" {% if form.notifications.value %}checked{% endif %}>
+            <label class="form-check-label" for="id_notifications">Receive notifications</label>
+          </div>
+
           <div class="mt-3">
             <button type="submit" class="btn btn-primary">Sign up</button>
           </div>

@@ -35,6 +35,8 @@ class Profile(models.Model):
     skills = models.JSONField(default=list)  # list of skill strings, max 5 enforced in form
     median_salary = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
     currency = models.CharField(max_length=32, choices=CURRENCY_CHOICES, default='USD')
+    # Whether the user has opted in to receive notifications from the app
+    notifications_enabled = models.BooleanField(default=False)
 
     def __str__(self):
         return f"{self.user.email} profile"
