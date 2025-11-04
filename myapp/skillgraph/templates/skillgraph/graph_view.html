@@ -4,7 +4,6 @@
 {% block title %}{{ page_title }}{% endblock %} 
 
 {% block extra_head %}
-<!-- 1. Load the D3.js library -->
 <script src="https://d3js.org/d3.v7.min.js"></script>
 
 <style>
@@ -113,21 +112,17 @@
         <div class="card shadow-sm border-0 h-100">
             <div class="card-header bg-light border-bottom d-flex justify-content-between align-items-center">
                 <h5 class="mb-0 text-muted">Job Transition Network</h5>
-                <!-- Removed buttons from here -->
-            </div>
+                </div>
             <div class="card-body p-1">
-                <!-- Wrapper needs position:relative for the legend -->
                 <div id="graph-container-wrapper" style="position: relative;">
-                    <!-- This container will hold the D3 graph -->
                     <div id="graph-container" class="h-100 w-100 d-flex justify-content-center align-items-center">
                         <p class="text-muted text-center m-0 p-5 lead">
                             {{ intro_message|default:"Your job transition network will appear here." }}
                         </p>
                     </div>
                     
-                    <!-- NEW: Legend Container -->
                     <div id="graph-legend">
-                        <h6 class="mb-1 small fw-bold text-muted">Transition Weight</h6>
+                        <h6 class="mb-1 small fw-bold text-muted">Transition Difficulty</h6>
                         <svg id="legend-svg" width="150" height="30"></svg>
                     </div>
                 </div>
@@ -135,7 +130,6 @@
         </div>
     </div>
     
-    <!-- This right-hand panel still works, using the 'recommended_jobs' data -->
     <div class="col-lg-3 mb-4">
         <div class="card shadow-sm border-0 sticky-top" style="top: 1.5rem;">
             <div class="card-header border-bottom py-3">
@@ -162,7 +156,6 @@
                         <div id="collapse{{ forloop.counter }}" class="accordion-collapse collapse" aria-labelledby="heading{{ forloop.counter }}" data-bs-parent="#recommendedJobsAccordion">
                             <div class="accordion-body p-3 pt-1 border-start border-end border-bottom" style="border-color: #e9ecef !important; background-color: #ffffff;">
     
-                                <!-- Details Section -->
                                 <h6 class="small text-dark mb-2 fw-bold">Details</h6>
                                 <p class="small text-muted mb-1">
                                     <strong>Avg. Experience:</strong> 
@@ -173,13 +166,12 @@
                                     ${{ job.yearly_comp|intcomma }}
                                 </p>
                             
-                                <!-- Skills Section -->
                                 <h6 class="small text-dark mb-2 fw-bold">Top Skills</h6>
                                 <div class="d-flex flex-wrap">
                                     {% for skill in job.skills %}
                                         <span class="badge rounded-pill text-bg-light border me-1 mb-1 fw-normal text-wrap">{{ skill }}</span>
                                     {% empty %}
-                                        <span class="small text-muted">No specific skills listed.</span>
+                                        <span classs="small text-muted">No specific skills listed.</span>
                                     {% endfor %}
                                 </div>
                             </div>
@@ -195,13 +187,9 @@
     </div>
 </div>
 
-<!-- 3. Pass Django data to JavaScript -->
-<!-- This one is for the right-hand panel -->
 {{ recommended_jobs|json_script:"jobs-data" }}
-<!-- This NEW one is for the D3 graph -->
 {{ graph_data|json_script:"graph-data" }}
 
-<!-- 4. The D3.js script to build the egonet -->
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         // A. Get the graph data element
@@ -247,9 +235,11 @@
         const minWeight = Math.min(...weights);
         const maxWeight = Math.max(...weights);
         
+        // --- 1. CHANGED: Reversed the color range ---
+        // Now minWeight (easier) = Light Gray, maxWeight (harder) = Dark Purple
         const colorScale = d3.scaleLinear()
             .domain([minWeight, maxWeight])
-            .range(["#6f42c1", "#e0e0e0"]); // Dark Purple to Light Gray
+            .range(["#e0e0e0", "#6f42c1"]); // Light Gray to Dark Purple
 
         // E. Set up the D3 container and SVG
         const container = document.getElementById('graph-container');
@@ -276,11 +266,11 @@
 
             linearGradient.append("stop")
                 .attr("offset", "0%")
-                .attr("stop-color", colorScale(minWeight)); // Darker color (min weight)
+                .attr("stop-color", colorScale(minWeight)); // Light color (min weight)
 
             linearGradient.append("stop")
                 .attr("offset", "100%")
-                .attr("stop-color", colorScale(maxWeight)); // Lighter color (max weight)
+                .attr("stop-color", colorScale(maxWeight)); // Dark color (max weight)
 
             // Draw the gradient bar
             legendSvg.append("rect")
@@ -290,20 +280,20 @@
                 .attr("height", 15)
                 .style("fill", "url(#legend-gradient)");
 
-            // Add Min label
+            // --- 2. CHANGED: Update Min label text ---
             legendSvg.append("text")
                 .attr("class", "legend-label")
                 .attr("x", 0)
                 .attr("y", 8) // Above the bar
-                .text(`Min: ${minWeight.toFixed(2)}`);
+                .text('Easier');
             
-            // Add Max label
+            // --- 3. CHANGED: Update Max label text ---
             legendSvg.append("text")
                 .attr("class", "legend-label")
                 .attr("x", width)
                 .attr("y", 8) // Above the bar
                 .attr("text-anchor", "end")
-                .text(`Max: ${maxWeight.toFixed(2)}`);
+                .text('Harder');
         })();
         // --- END NEW ---
 

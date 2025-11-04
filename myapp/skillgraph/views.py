@@ -23,7 +23,8 @@ def graph_view(request):
     sample_user = Users.objects.get(id='03865452-bc5e-4292-8951-9c3604a7858e')
     
     if sample_user:
-        graph_data['ego_node'] = sample_user.job_title or 'My Role'
+        # graph_data['ego_node'] = sample_user.job_title or 'My Role'
+        graph_data['ego_node'] = 'My Role' + ' (' + sample_user.job_title + ')'
         job_transitions_data = sample_user.job_transitions
         
         # Handle if data is stored as a JSON string
