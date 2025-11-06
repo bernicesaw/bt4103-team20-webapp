@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Dashboard - {{ active_sub_nav|default:"Multi-year Trends" }}{% endblock %}
+{% block title %}Dashboard{% endblock %}
 
 {#
 Set the main navigation item for the parent template's logic.
@@ -8,35 +8,33 @@ The base template needs 'active_nav_item' set to 'dashboard'
 to highlight the main 'Dashboard' link.
 #}
 
-{% block sub_nav %}
-    <!-- This is the purple banner content, only rendered when this template is used -->
-    <div class="sub-nav-banner d-flex justify-content-start">
-        <a href="/dashboard/trends"
-           class="sub-nav-link 
-                  {% if active_sub_nav == 'multi-year' or active_sub_nav == None %}active-sub{% endif %}">
-            Multi-year Trends
-        </a>
-        <a href="/dashboard/landscape"
-           class="sub-nav-link 
-                  {% if active_sub_nav == 'landscape' %}active-sub{% endif %}">
-            2025 Global Landscape
-        </a>
+{% block content %}
+    <div class="streamlit-container">
+        <iframe 
+            src="https://developer-global-landscape-gafc7qqkoek42mzmdctpy7.streamlit.app?embed=true" 
+            frameborder="0"
+            width="100%"
+            height="800px"
+            style="border: none; border-radius: 8px;"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowfullscreen>
+        </iframe>
     </div>
 {% endblock %}
 
-{% block content %}
-    <!-- Content changes based on the active_sub_nav variable -->
-    {% if active_sub_nav == 'landscape' %}
-        <h2 class="mb-4">2025 Global Landscape Report</h2>
-        <div class="alert alert-info shadow-sm">
-            This page will contain interactive data visualizations focusing on the global talent landscape for the year 2025.
-        </div>
-    {% else %}
-        <h2 class="mb-4">Multi-year Trends Analysis</h2>
-        <div class="alert alert-success shadow-sm">
-            This is the default Dashboard view, showing year-over-year skill acquisition and depletion trends.
-        </div>
-    {% endif %}
+{% block extra_css %}
+<style>
+    .streamlit-container {
+        width: 100%;
+        min-height: 800px;
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
     
-    <p>To switch the sub-navigation highlighting, ensure your backend view sets the `active_sub_nav` variable to either `'multi-year'` or `'landscape'`.</p>
+    .streamlit-container iframe {
+        display: block;
+    }
+</style>
 {% endblock %}
