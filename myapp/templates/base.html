@@ -99,8 +99,8 @@
                         <a class="nav-link {% if active_nav_item == 'dashboard' %}active{% endif %}" href="/dashboard">Dashboard</a>
                     </li>
                     <li class="nav-item">
-                        <!-- Skill Adjacency Graph Link (protected) -->
-                        <a class="nav-link protected-link {% if active_nav_item == 'skillgraph' %}active{% endif %}" href="/skillgraph/">Skill Adjacency Graph</a>
+                        <!-- Skill Adjacency Graph Link -->
+                        <a class="nav-link {% if active_nav_item == 'skillgraph' %}active{% endif %}" href="/skillgraph/">Skill Adjacency Graph</a>
                     </li>
                     <li class="nav-item">
                         <!-- AskAI Link (protected) -->
@@ -217,22 +217,8 @@
             const IS_AUTH = false;
             {% endif %}
 
-            document.addEventListener('DOMContentLoaded', () => {
-                const protectedLinks = document.querySelectorAll('.protected-link');
-                protectedLinks.forEach(a => {
-                    a.addEventListener('click', (ev) => {
-                        if (!IS_AUTH) {
-                            ev.preventDefault();
-                            const target = a.getAttribute('href') || '/';
-                            // set next field in modal to redirect after login
-                            const nextInput = document.getElementById('login-next');
-                            if (nextInput) nextInput.value = target;
-                            const loginModal = new bootstrap.Modal(document.getElementById('loginModal'));
-                            loginModal.show();
-                        }
-                    });
-                });
-            });
+            // No client-side interception for protected links anymore.
+            // Server-side middleware will redirect unauthenticated users to the login page with ?next=...
         </script>
 </body>
 </html>
