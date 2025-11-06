@@ -1,3 +1,0 @@
-"""
-Career Chatbot Django App
-"""
