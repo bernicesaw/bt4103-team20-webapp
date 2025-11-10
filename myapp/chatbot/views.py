@@ -32,23 +32,14 @@ def chatbot_view(request):
 @require_http_methods(["POST"])
 async def query_chatbot_api(request):
     """
-    Async endpoint that runs the career agent DIRECTLY in Django
-    No FastAPI needed anymore!
-    
-    POST /askai/api/query/
-    Body: {"text": "user query", "session_id": "optional"}
-    
-    Returns: {
-        "success": true,
-        "input": "user query",
-        "output": "AI response",
-        "intermediate_steps": [...],
-        "response_time": 3.45
-    }
+    Async endpoint that runs the career agent with user context
     """
     start_time = time.time()
     
     try:
+        # Import here to avoid circular imports
+        from .agents import set_user_id
+        
         # Parse request body
         if request.content_type == 'application/json':
             data = json.loads(request.body)
@@ -67,26 +58,23 @@ async def query_chatbot_api(request):
                 'error': 'Text parameter is required'
             }, status=400)
         
+        # Set user ID for personalized recommendations
+        if request.user.is_authenticated:
+            set_user_id(str(request.user.id))
+            logger.info(f"User: {request.user.username} (ID: {request.user.id})")
+        else:
+            set_user_id(None)
+            logger.info("Anonymous user")
+        
         logger.info(f"Processing query: {text[:50]}...")
         
-        # Call the agent DIRECTLY (no HTTP request to FastAPI!)
-        # This runs your LangChain agent in Django
+        # Call the agent
         result = await career_rag_agent_executor.ainvoke({"input": text})
         
         # Calculate response time
         response_time = time.time() - start_time
         
         logger.info(f"Query processed in {response_time:.2f}s")
-        
-        # # Optional: Save to database
-        # from .models import ChatHistory
-        # ChatHistory.objects.create(
-        #     user=request.user if request.user.is_authenticated else None,
-        #     session_id=session_id,
-        #     query=text,
-        #     response=result.get('output', ''),
-        #     response_time=response_time
-        # )
         
         # Ensure intermediate steps are JSON-serializable
         intermediate_steps = []

@@ -186,6 +186,23 @@ RETURN j.name AS job_name,
        j.median_comp AS salary,
        j.median_workexp AS experience_years
 ORDER BY j.median_comp DESC
+                                                        
+## Pattern 7: Personalized Career Recommendations
+Use when query contains user profile information: <USER_PROFILE:job_title|skills>
+This pattern returns related jobs WITH their required skills
+
+Example: "Generate career recommendation <USER_PROFILE:Data or business analyst|Databricks SQL,Python>"
+MATCH (current:Job {{name: 'Data or business analyst'}})-[r:RELATED_TO]->(related:Job)
+RETURN related.name AS job_name,
+       related.top_language AS language,
+       related.top_database AS database, 
+       related.top_platform AS platform,
+       related.top_webframe AS framework,
+       related.median_comp AS salary,
+       related.median_workexp AS experience,
+       r.weight AS similarity
+ORDER BY r.weight ASC
+LIMIT 3
 
 KEYWORD MAPPING:
 - "skills/technologies/tools/tech stack" for a specific job → Pattern 1 (return properties)
@@ -195,6 +212,8 @@ KEYWORD MAPPING:
 - "which jobs use [technology]" → Pattern 3 (use CONTAINS)
 - "high-paying/better-paying" jobs → Pattern 4 (use WHERE with median_comp)
 - "entry-level/junior/senior" → Pattern 5 (use WHERE with median_workexp)
+- "generate my career recommendation" → Pattern 7 (use <USER_PROFILE:...>)
+
 
 COMMON TECHNOLOGY NAMES (case-sensitive):
 Languages: Python, JavaScript, TypeScript, Java, C++, C#, Go, Rust, Ruby, PHP, Swift, Kotlin, R, SQL
