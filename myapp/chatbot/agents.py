@@ -14,12 +14,6 @@ CAREER_AGENT_MODEL = os.getenv("CAREER_AGENT_MODEL")
 
 from .chains import career_cypher_chain, qa_chain
 
-from .recommendation_helper import (
-    fetch_user_profile,
-    format_recommendation_output
-)
-from .chains import supabase_vector_store
-
 
 # --- Job title synonyms dictionary ---
 SYNONYMS = {
@@ -162,126 +156,31 @@ SYNONYMS = {
     "quant": "Financial analyst or engineer",
 }
 
-# --- User context for personalized recommendations ---
-_current_user_id = None
-
-def set_user_id(user_id: str):
-    """Set the current user's ID for personalized queries"""
-    global _current_user_id
-    _current_user_id = user_id
-    print(f"👤 User ID set: {user_id}")
-
-def get_user_id() -> str:
-    """Get the current user's ID"""
-    return _current_user_id
-
-def personalized_recommendation_wrapper(query: str) -> str:
-    """
-    Generate personalized career recommendations based on user profile
-    """
-    try:
-        user_id = get_user_id()
-        
-        if not user_id:
-            return "I need you to be logged in to generate personalized recommendations."
-        
-        # Fetch user profile from database
-        profile = fetch_user_profile(user_id)
-        
-        if not profile:
-            return "I couldn't find your profile. Please make sure you've filled out your job title and skills in your profile."
-        
-        user_job = profile.get('job_title')
-        user_skills = profile.get('skills', [])
-        
-        if not user_job:
-            return "Please add your current job title to your profile first."
-        
-        print(f"👤 Generating recommendations for: {user_job}")
-        print(f"📚 User skills: {user_skills}")
-        
-        # Normalize job title
-        normalized_job = normalize_job_title_in_query(user_job)
-        
-        # Inject user profile into query
-        # Format: <USER_PROFILE:job_title|skill1,skill2>
-        skills_str = ','.join(user_skills) if user_skills else 'none'
-        query_with_profile = f"{query} <USER_PROFILE:{normalized_job}|{skills_str}>"
-        
-        print(f"🔄 Enhanced query: {query_with_profile}")
-        
-        # Get recommendations from Neo4j
-        result = career_cypher_chain.invoke({"query": query_with_profile})
-        
-        # Parse the result - it should contain job recommendations with skills
-        # The result is in result['result'] but we need the raw context
-        # We need to access the intermediate results
-        
-        # Since we need the raw Neo4j results, we'll query directly
-        from .chains import graph
-        
-        cypher_query = f"""
-        MATCH (current:Job {{name: '{normalized_job}'}})-[r:RELATED_TO]->(related:Job)
-        RETURN related.name AS job_name,
-               related.top_language AS language,
-               related.top_database AS database, 
-               related.top_platform AS platform,
-               related.top_webframe AS framework,
-               related.median_comp AS salary,
-               related.median_workexp AS experience,
-               r.weight AS similarity
-        ORDER BY r.weight ASC
-        LIMIT 3
-        """
-        
-        neo4j_results = graph.query(cypher_query)
-        
-        if not neo4j_results:
-            return f"I couldn't find any career recommendations for {user_job}. This might be because the job title isn't in our database."
-        
-        # Format the output with courses
-        formatted_output = format_recommendation_output(
-            user_job=normalized_job,
-            recommendations=neo4j_results,
-            user_skills=user_skills,
-            vector_store=supabase_vector_store
-        )
-        
-        return formatted_output
-        
-    except Exception as e:
-        print(f"❌ Error in personalized_recommendation_wrapper: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        return f"I encountered an error generating your recommendations: {str(e)}"
 
 # --- Agent prompt ---
 career_agent_prompt = ChatPromptTemplate.from_messages([
-    ("system", """You are a career advisor assistant with access to three tools:
+    ("system", """You are a career advisor assistant with access to two tools:
 
-1. **PersonalizedCareerRecommendation** - for generating career recommendations based on user's profile
-2. **CareerGraph** - for general job data, skills, salaries, and career information
-3. **CourseRecommendations** - for finding courses and learning materials
+1. **CareerGraph** - for job data, skills, salaries, and career information
+2. **CourseRecommendations** - for finding courses and learning materials
 
-TOOL SELECTION RULES:
+CRITICAL RULE: Always pass the COMPLETE user query to the tool.
 
-Use **PersonalizedCareerRecommendation** when user asks:
-- "Generate my career recommendation"
-- "What career paths for me"
-- "Recommend careers for me"
-- "Career suggestions based on my profile"
+CORRECT EXAMPLES (these are perfect - do exactly this):
+✅ User: "What is the average salary for a data analyst?"
+   → You invoke: CareerGraph with "What is the average salary for a data analyst?"
 
-Use **CareerGraph** for general queries:
-- "Which jobs use Python?"
-- "What skills does a data scientist need?"
-- "Jobs similar to backend developer"
+✅ User: "Which jobs use Python as a top language?"
+   → You invoke: CareerGraph with "Which jobs use Python as a top language?"
 
-Use **CourseRecommendations** for learning materials:
-- "Show me courses for Python"
-- "Recommend learning materials for machine learning"
+WRONG EXAMPLES (NEVER do this):
+❌ User: "What is the average salary for a data analyst?"
+   → You invoke: CareerGraph with "data analyst salary" (TOO SHORT!)
 
-CRITICAL: Always pass the COMPLETE user query to the tool.
+❌ User: "Which jobs use Python as a top language?"
+   → You invoke: CareerGraph with "Python" (MISSING CONTEXT!)
 
+REMEMBER: The tool handles all processing. Your ONLY job is to pass the exact query.
 """),
     ("human", "{input}"),
     MessagesPlaceholder(variable_name="agent_scratchpad"),
@@ -388,7 +287,6 @@ def course_chain_wrapper(query: str) -> str:
 
 
 # --- Define tools ---
-# --- Define tools ---
 tools = [
     Tool(
         name="CourseRecommendations",
@@ -396,32 +294,20 @@ tools = [
         description=(
             "Use for questions about courses, tutorials, learning materials, or certifications. "
             "Always pass the COMPLETE user query, not just keywords."
-            "ONLY for finding TECHNOLOGY and CAREER courses: programming, data science, cloud, web dev, ML, etc. "
-            "DO NOT use for non-tech topics like cooking, sports, art, music. "
-            "If tool returns 'I don't have courses', DO NOT retry - accept the answer. "
         ),
-    ),
-    Tool(
-        name="PersonalizedCareerRecommendation",
-        func=personalized_recommendation_wrapper,
-        description=(
-            "Use ONLY when user asks for PERSONALIZED career recommendations like: "
-            "'Generate my career recommendation', 'What career paths for me', 'Recommend careers for me'. "
-            "This tool uses the user's profile (job title and skills) from the database. "
-            "Pass the complete query."
-        ),
-        return_direct = True,
     ),
     Tool(
         name="CareerGraph",
         func=graph_chain_wrapper,
         description=(
-            "Use for general questions about jobs, careers, skills, technologies, salaries, or experience. "
+            "Use for questions about jobs, careers, skills, technologies, salaries, or experience. "
             "IMPORTANT: Always pass the COMPLETE user query, not just keywords. "
-            "Examples: 'What skills does X need?', 'Which jobs use Python?', 'Jobs similar to data scientist'"
+            "The tool handles job title normalization automatically. "
+            "Examples: 'What skills does X need?', 'Which jobs use Python?', 'X salary'"
         ),
     ),
 ]
+
 
 # --- Initialize model ---
 chat_model = ChatOpenAI(
