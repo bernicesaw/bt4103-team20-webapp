@@ -111,16 +111,7 @@
 
             <!-- Right-hand User/Notification Area -->
             <div class="d-flex align-items-center">
-                <!-- Notification Bell (only visible when user is authenticated) -->
-                {% if request.user.is_authenticated %}
-                <button class="btn btn-outline-warning rounded-circle me-4 position-relative" style="--bs-btn-padding-y: .25rem; --bs-btn-padding-x: .25rem; --bs-btn-font-size: .75rem;">
-                    🔔
-                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-                        1
-                        <span class="visually-hidden">unread messages</span>
-                    </span>
-                </button>
-                {% endif %}
+                <!-- Notification Bell Removed -->
 
                 <!-- User Profile / Auth Action -->
                 {% if request.user.is_authenticated %}
@@ -221,4 +212,3 @@
         </script>
 </body>
 </html>
-
