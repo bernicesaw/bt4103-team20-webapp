@@ -92,7 +92,7 @@ class SignupForm(forms.Form):
     # Free-form job title with client-side suggestions from JOB_TITLE_CHOICES
     job_title = forms.CharField(label='Job Title', required=True)
 
-    skills = forms.CharField(required=True, help_text='Comma-separated skills (add up to five)')
+    skills = forms.CharField(required=True, help_text='Comma-separated skills (add up to ten)')
 
     median_salary = forms.DecimalField(
         max_digits=12,
@@ -171,12 +171,12 @@ class SignupForm(forms.Form):
         Validate skills field.
         
         - Parses comma-separated string into list
-        - Ensures max 5 skills
+        - Ensures max 10 skills
         - Validates each skill against authoritative SKILLS list
         """
         raw = self.cleaned_data.get('skills') or ''
         skills = [s.strip() for s in raw.split(',') if s.strip()]
-        if len(skills) > 5:
+        if len(skills) > 10:
             raise ValidationError("You may select at most 10 skills.")
         # Ensure each skill is in our authoritative SKILLS list
         unknown = [s for s in skills if s not in getattr(self, 'SKILLS', [])]
@@ -193,7 +193,7 @@ class SignupForm(forms.Form):
         - Is a list (not dict or other type)
         - Max 10 entries
         - Each entry has required fields (job_title, median_salary, skills)
-        - Each entry's skills are valid and max 5 per entry
+        - Each entry's skills are valid and max 10 per entry
         - Skills are from authoritative list
         """
         import json
@@ -210,7 +210,7 @@ class SignupForm(forms.Form):
         # Validate each work experience entry
         for idx, exp in enumerate(arr):
             skills = exp.get('skills', [])
-            if len(skills) > 5:
+            if len(skills) > 10:
                 raise ValidationError(f"Work experience #{idx+1} has more than 5 skills.")
             
             # Validate each skill against authoritative list

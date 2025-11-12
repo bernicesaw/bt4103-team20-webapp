@@ -323,7 +323,7 @@ def profile_view(request):
                 
                 # Validate skills count
                 sks = exp.get('skills') or []
-                if len(sks) > 5:
+                if len(sks) > 10:
                     errors.append(f'Work experience #{idx+1} has more than 5 skills.')
                 
                 work_exps.append(exp)

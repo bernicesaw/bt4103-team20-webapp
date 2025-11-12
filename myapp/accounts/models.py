@@ -47,7 +47,7 @@ class Profile(models.Model):
     """
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     job_title = models.CharField(max_length=200)
-    # JSONField stores a list of skill strings (max 5 enforced in forms)
+    # JSONField stores a list of skill strings (max 10 enforced in forms)
     skills = models.JSONField(default=list)
     median_salary = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
     currency = models.CharField(max_length=32, choices=CURRENCY_CHOICES, default='USD')
