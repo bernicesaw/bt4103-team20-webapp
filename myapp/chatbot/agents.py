@@ -199,29 +199,13 @@ def personalized_recommendation_wrapper(query: str) -> str:
         
         print(f"👤 Generating recommendations for: {user_job}")
         print(f"📚 User skills: {user_skills}")
+    
         
-        # Normalize job title
-        normalized_job = normalize_job_title_in_query(user_job)
-        
-        # Inject user profile into query
-        # Format: <USER_PROFILE:job_title|skill1,skill2>
-        skills_str = ','.join(user_skills) if user_skills else 'none'
-        query_with_profile = f"{query} <USER_PROFILE:{normalized_job}|{skills_str}>"
-        
-        print(f"🔄 Enhanced query: {query_with_profile}")
-        
-        # Get recommendations from Neo4j
-        result = career_cypher_chain.invoke({"query": query_with_profile})
-        
-        # Parse the result - it should contain job recommendations with skills
-        # The result is in result['result'] but we need the raw context
-        # We need to access the intermediate results
-        
-        # Since we need the raw Neo4j results, we'll query directly
+        # Query Neo4j DIRECTLY (don't use career_cypher_chain)
         from .chains import graph
         
         cypher_query = f"""
-        MATCH (current:Job {{name: '{normalized_job}'}})-[r:RELATED_TO]->(related:Job)
+        MATCH (current:Job {{name: '{user_job}'}})-[r:RELATED_TO]->(related:Job)
         RETURN related.name AS job_name,
                related.top_language AS language,
                related.top_database AS database, 
@@ -234,18 +218,23 @@ def personalized_recommendation_wrapper(query: str) -> str:
         LIMIT 3
         """
         
+        print(f"🔍 Executing Cypher query...")
         neo4j_results = graph.query(cypher_query)
         
         if not neo4j_results:
             return f"I couldn't find any career recommendations for {user_job}. This might be because the job title isn't in our database."
         
-        # Format the output with courses
+        print(f"✅ Found {len(neo4j_results)} recommendations")
+        
+        # Format the output with courses using YOUR custom function
         formatted_output = format_recommendation_output(
-            user_job=normalized_job,
+            user_job=user_job,
             recommendations=neo4j_results,
             user_skills=user_skills,
             vector_store=supabase_vector_store
         )
+        
+        print(f"📝 Formatted output length: {len(formatted_output)} characters")
         
         return formatted_output
         

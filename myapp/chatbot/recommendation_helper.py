@@ -8,61 +8,50 @@ from dotenv import load_dotenv
 from langchain_postgres.vectorstores import PGVector
 from langchain_community.embeddings import SentenceTransformerEmbeddings
 import psycopg2
+from accounts.models import Profile 
 
 load_dotenv()
 
-SUPABASE_CONNECTION_STRING = os.getenv("SUPABASE_POOLER_URL")
 
-
-def fetch_user_profile(user_id: str) -> Optional[Dict[str, any]]:
+def fetch_user_profile(user_id: int) -> Optional[Dict[str, any]]:
     """
-    Fetch user's job_title and skills from accounts_profile table
+    Fetch user's job_title and skills from accounts_profile table using Django ORM
+    
+    Args:
+        user_id: The authenticated user's ID (integer)
     
     Returns:
         {"job_title": "Data or business analyst", "skills": ["Databricks SQL", "Python"]}
     """
     try:
-        conn = psycopg2.connect(SUPABASE_CONNECTION_STRING)
-        cursor = conn.cursor()
+        # Use Django ORM instead of raw SQL
+        user_profile = Profile.objects.get(user=user_id)
         
-        query = """
-        SELECT job_title, skills 
-        FROM accounts_profile 
-        WHERE user_id = %s
-        """
+        # Extract job title
+        job_title = user_profile.job_title
         
-        cursor.execute(query, (user_id,))
-        result = cursor.fetchone()
+        # Extract skills - it's already a JSONField (list)
+        skills = user_profile.skills
+        if not isinstance(skills, list):
+            skills = []
         
-        cursor.close()
-        conn.close()
+        # Clean up skills list
+        skills = [s for s in skills if s]  # Remove empty strings
         
-        if result:
-            job_title, skills = result
-            
-            # Handle skills - could be JSON, array, or comma-separated string
-            if isinstance(skills, str):
-                # If it's a string like "['skill1', 'skill2']" or "skill1,skill2"
-                skills = [s.strip().strip("[]'\"") for s in skills.split(',')]
-            elif not isinstance(skills, list):
-                skills = []
-            
-            # Clean up skills list
-            skills = [s for s in skills if s]  # Remove empty strings
-            
-            print(f"✅ Fetched profile: job='{job_title}', skills={skills}")
-            return {
-                "job_title": job_title,
-                "skills": [s.lower().strip() for s in skills]  # Normalize to lowercase
-            }
-        else:
-            print(f"⚠️ No profile found for user_id: {user_id}")
-            return None
+        print(f"✅ Fetched profile: job='{job_title}', skills={skills}")
+        return {
+            "job_title": job_title,
+            "skills": [s.lower().strip() for s in skills]  # Normalize to lowercase
+        }
+        
+    except Profile.DoesNotExist:
+        print(f"⚠️ No profile found for user_id: {user_id}")
+        return None
             
     except Exception as e:
         print(f"❌ Error fetching user profile: {e}")
         return None
-
+    
 
 def find_missing_skills(user_skills: List[str], job_skills_dict: Dict[str, str]) -> List[str]:
     """

@@ -53,6 +53,3 @@ class ChatHistory(models.Model):
         return f"{user_display} - {self.query[:50]} - {self.timestamp.strftime('%Y-%m-%d %H:%M')}"
 
 
-# Note: After creating this model, run:
-# python manage.py makemigrations
-# python manage.py migrate

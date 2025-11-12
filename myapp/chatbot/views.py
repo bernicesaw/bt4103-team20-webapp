@@ -60,8 +60,8 @@ async def query_chatbot_api(request):
         
         # Set user ID for personalized recommendations
         if request.user.is_authenticated:
-            set_user_id(str(request.user.id))
-            logger.info(f"User: {request.user.username} (ID: {request.user.id})")
+            set_user_id(request.user.id)
+            logger.info(f"(ID: {request.user.id})")
         else:
             set_user_id(None)
             logger.info("Anonymous user")
