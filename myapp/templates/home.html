@@ -244,7 +244,7 @@
         <div class="card shadow-sm h-100">
           <div class="card-body d-flex flex-column">
             <h6 class="card-title">Developer Market Trends</h6>
-            <p class="text-muted small">Example: median salaries over time for software roles (sample data).</p>
+            <p class="text-muted small">Example: median salaries over time for software engineering roles.</p>
             <div class="flex-grow-1">
               <canvas id="chartLandscape" width="400" height="220" aria-label="Developer trends chart"></canvas>
             </div>
@@ -255,8 +255,8 @@
       <div class="col-lg-6" style="min-height:260px;" data-aos="fade-up" data-aos-delay="220">
         <div class="card shadow-sm h-100">
           <div class="card-body d-flex flex-column">
-            <h6 class="card-title">Course Recommendations (sample)</h6>
-            <p class="text-muted small">Example distribution of recommended course topics for a sample developer profile.</p>
+            <h6 class="card-title">Trending Courses</h6>
+            <p class="text-muted small">Current trending courses for developers.</p>
             <div class="flex-grow-1">
               <canvas id="chartCourses" width="400" height="220" aria-label="Course recommendations chart"></canvas>
             </div>
@@ -270,7 +270,7 @@
       <div class="col-12">
         <div class="card shadow-sm">
           <div class="card-body">
-            <h6 class="card-title">Skill Adjacency (mini)</h6>
+            <h6 class="card-title">Skill Adjacency (Sample)</h6>
             <div id="skillNetwork" style="height:360px;"></div>
             <p class="small text-muted mt-2">Interactive mini-network showing simplified skill relationships for developer roles.</p>
           </div>
@@ -316,7 +316,7 @@
           labels: ['2019','2020','2021','2022','2023','2024'],
           datasets: [{
             label: 'Median salary (USD)',
-            data: [70000,72000,74000,76000,78000,80000],
+            data: [105000,110000,120204,130000,140000,188000],
             borderColor: '#2563eb',
             backgroundColor: 'rgba(37,99,235,0.08)',
             tension: 0.3
@@ -329,9 +329,9 @@
       new Chart(ctxC, {
         type: 'bar',
         data: {
-          labels: ['Frontend','Backend','Data','DevOps','Security'],
+          labels: ['AI/ML','Cloud','Full-Stack','DevOps','Security'],
           datasets: [{
-            label: 'Recommended courses',
+            label: 'Trending Courses',
             data: [12,18,22,9,6],
             backgroundColor: ['#0ea5a4','#60a5fa','#f97316','#34d399','#fb7185']
           }]
