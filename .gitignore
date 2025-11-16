@@ -5,7 +5,8 @@
 
 # data files
 **/.DS_Store
-
+# airflow logs
+airflow/logs/
 # C extensions
 *.so
 
