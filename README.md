@@ -70,35 +70,38 @@ Visit: http://localhost:8000
 ## Project structure
 
 ```
-bt4103-team20/
-├ dashboard/
-│  ├ streamlit_app.py          # Combined entrypoint (One-Year + Multi-Year)
-│  ├ one_year_dashboard.py     # 2025 Global Landscape
-│  ├ multi_year_dashboard.py   # 2020–2025 Trends
-│  └ .streamlit/
-│     ├ config.toml            # Local Streamlit configuration
-│     └ secrets.toml           # Local secrets (gitignored)
-├ data/
-│  ├ raw/
-│  │  ├ multi_year_survey_*.csv   # Original multi-year survey CSVs
-│  │  └ survey_results_pu*.csv    # Original one-year survey CSVs
-│  └ processed/
-│     ├ multi_year_cleaned_*.csv  # Cleaned / transformed multi-year datasets
-│     └ one_year_cleaned_*.csv    # Cleaned / transformed one-year datasets
-├ devcontainer/
-│  ├ devcontainer.json         # VS Code Dev Container definition
-│  └ Dockerfile                # Dev container image
-├ notebooks/
-│  ├ exploration.ipynb         # Exploratory data analysis
-│  └ modeling.ipynb            # Modeling experiments
-├ src/
-│  ├ data_prep.py              # Data cleaning and feature engineering
-│  ├ modeling.py               # Model training utilities
-│  └ viz_helpers.py            # Shared plotting / visualization helpers
-├ tests/
-│  └ test_modeling.py          # Unit tests for modeling utilities
-├ .gitignore                   # Git ignore rules
-├ pyproject.toml               # Project dependencies and tooling
-└ README.md                    # Project overview and usage
+bt4103-team20-webapp/
+├── airflow/          # contains code for the airflow automated course scrapping
+├── docs/            #  contains initial user account authentication flow
+├── myapp/         # contains all the Django web app code
+├── README.md
+└── requirements.txt
+
+# Below are more details on our Django web app:
+myapp/
+├── accounts/        # contains web app’s user accounts implementation
+├── chatbot/          # contains chatbot web page implementation and evaluation
+├── dashboard/    # contains dashboard web page logic and embedding with streamlit
+├── myapp/         # contains web app’s configuration
+├── skillgraph/     # contains skill graph web page implementation
+├── templates/     # contains html templates of web app
+├── load_env.py   # loads .env file with API keys
+├── .env               # contains all API keys
+├── manage.py  
+├── settings.py
+└── urls.py
+
+# Below are more details on the airflow implementation:
+airflow
+├── dags      #contains all the dags
+│     ├─ scripts        # contains all the scrapers
+│     ├─ codecademy_scraper_dag.py  
+│     ├─ coursera_scraper_dag.py
+│     ├─ datacamp_scraper_dag.py
+│     ├─ datapipeline_merge.py
+│     └─ so_survey_scraper_dag.py
+├── docker-compose.yaml     # dockerised
+├── Dockerfile
+├── requirements.txt
 
 ```
