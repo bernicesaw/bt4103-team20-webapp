@@ -19,7 +19,6 @@ source .venv/bin/activate   # macOS/Linux
 pip install -r requirements.txt
 ```
 
-3. Run App
 ## Run App
 
 First navigate to the app's directory:
@@ -39,7 +38,7 @@ Run the web app with the following command:
 python manage.py runserver
 ```
 
-The app opens at http://localhost:8000. Create account and sign in to experience the skill adjacency graph and intereact with our chatbot.
+The app opens at http://127.0.0.1:8000/. Create account and sign in to experience the skill adjacency graph and intereact with our chatbot.
 
 ## Troubleshooting
 - “Scheme 'b''://' is unknown”:
@@ -64,7 +63,7 @@ docker run -p 8000:8000 team20-webapp
 3. Access the app
 
 ```bash
-Visit: http://localhost:8000
+Visit: http://127.0.0.1:8000/
 ```
 
 ## Project structure
