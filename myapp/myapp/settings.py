@@ -146,3 +146,33 @@ CHATBOT_URL = os.getenv(
     'http://localhost:8000/career-rag-agent'
 )
 
+# =======================================================
+# Deployment / Static Files Configuration
+# =======================================================
+
+# 1. Production safety
+DEBUG = os.getenv("DEBUG", "False") == "True"
+SECRET_KEY = os.getenv("SECRET_KEY", SECRET_KEY)
+ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "*").split(",")
+
+# 2. Static files
+STATIC_URL = "static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"
+
+# 3. Optional: serve static files efficiently in production
+MIDDLEWARE.insert(1, "whitenoise.middleware.WhiteNoiseMiddleware")
+
+# 4. Database fallback for local dev
+if not DATABASES.get("default"):
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        }
+    }
+
+# 5. Optional: CSRF & secure headers for Render/Koyeb
+CSRF_TRUSTED_ORIGINS = [
+    os.getenv("CSRF_ORIGIN", "https://your-service.onrender.com"),
+]
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
