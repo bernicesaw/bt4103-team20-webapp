@@ -1,39 +1,46 @@
-import pendulum
+# airflow/dags/coursera_scraper_dag_demo.py
+from datetime import datetime
 from airflow import DAG
-from airflow.operators.bash import BashOperator
+from airflow.operators.python import PythonOperator
+import os
+from scripts.db_supabase import ensure_table_exists, upsert_rows
+from scripts.coursera_scraper import scrape_coursera_rows_sync, transform_for_db
 
-DEFAULT_PARAMS = {
-    "keywords": "machine learning, data science",
-    "pages": 2,
-    "concurrency": 16,
-    "limit_per_keyword": 20,
-    "output": "/opt/airflow/data/coursera_courses.csv"
-}
+# Use the same var your webapp uses; it's already in container env via docker-compose env_file
+POOLER = os.getenv("SUPABASE_POOLER_URL")  # optional: for log sanity checks
 
-tz = pendulum.timezone("Asia/Singapore")
+def _create_table():
+    # expose to helper (which now accepts either var)
+    os.environ["SUPABASE_POOLER_URL"] = os.environ.get("SUPABASE_POOLER_URL", "")
+    ensure_table_exists()
+    print("✅ ensured public.coursera_demo exists")
+
+def _scrape_and_upsert():
+    os.environ["SUPABASE_POOLER_URL"] = os.environ.get("SUPABASE_POOLER_URL", "")
+    rows = scrape_coursera_rows_sync(
+        keywords_csv="machine learning, data science",
+        pages=2,
+        concurrency=8,
+    )
+    upsert_rows(transform_for_db(rows))
+    print(f"✅ upserted {len(rows)} rows")
 
 with DAG(
     dag_id="coursera_scraper_dag",
-    description="Run the Coursera keyword scraper daily at 09:00 SGT",
-    start_date=pendulum.datetime(2025, 10, 1, tz=tz),  # must be in the past
-    schedule="0 9 * * *",          # ✅ every day at 09:00 Singapore time
+    start_date=datetime(2024, 1, 1),
+    schedule=None,
     catchup=False,
-    params=DEFAULT_PARAMS,
-    max_active_runs=1,
-    tags=["scraper", "coursera"],
-    render_template_as_native_obj=True,
+    tags=["demo", "supabase", "coursera"],
 ) as dag:
 
-    bash_cmd = """
-    python /opt/airflow/dags/scripts/coursera_scraper.py \
-        --keywords "{{ dag_run.conf.get('keywords', params.keywords) }}" \
-        --pages "{{ dag_run.conf.get('pages', params.pages) }}" \
-        --concurrency "{{ dag_run.conf.get('concurrency', params.concurrency) }}" \
-        --limit-per-keyword "{{ dag_run.conf.get('limit_per_keyword', params.limit_per_keyword) }}" \
-        -o "{{ dag_run.conf.get('output', params.output) }}"
-    """
-
-    run_scraper = BashOperator(
-        task_id="run_coursera_scraper",
-        bash_command=bash_cmd,
+    create_table = PythonOperator(
+        task_id="create_table_if_needed",
+        python_callable=_create_table,
     )
+
+    scrape_and_save = PythonOperator(
+        task_id="scrape_and_upsert_to_supabase",
+        python_callable=_scrape_and_upsert,
+    )
+
+    create_table >> scrape_and_save

@@ -47,8 +47,8 @@ def merge_two_sources():
             raise RuntimeError(f"Missing tables: {', '.join(missing)}")
 
         # Fetch rows (all columns)
-        rows_cou = _fetch_all(conn, "SELECT * FROM public.coursera_demo")
-        rows_cod = _fetch_all(conn, "SELECT * FROM public.codecademy_demo")
+        rows_cou = _fetch_all(conn, "SELECT * FROM public.coursera")
+        rows_cod = _fetch_all(conn, "SELECT * FROM public.codecademy")
 
         if not rows_cou and not rows_cod:
             raise RuntimeError("Both source tables are empty.")
@@ -276,13 +276,17 @@ def generate_embeddings():
         raise
 
 # ---------- DAG ----------
+from pendulum import timezone
+
 with DAG(
     dag_id="datapipeline_merge",
     start_date=datetime(2024, 1, 1),
-    schedule=None,          # manual for now
+    schedule="0 10 * * *",  # Runs every day at 10:00 AM
     catchup=False,
     tags=["merge", "supabase", "embeddings"],
+    timezone=timezone("Asia/Singapore"),  # Ensures correct SGT scheduling
 ) as dag:
+
     merge_task = PythonOperator(
         task_id="merge_coursera_and_codecademy",
         python_callable=merge_two_sources,
